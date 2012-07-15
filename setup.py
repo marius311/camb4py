@@ -17,7 +17,7 @@ config = Configuration('pycamb',
    derr=None,
 )
 
-class build_camb(_build):
+class build(_build):
     objs = ['constants',
             'utils',
             'subroutines',
@@ -36,19 +36,24 @@ class build_camb(_build):
             'inidriver']
     
     def run(self):
+        _build.run(self)
         
         if not os.path.exists(os.path.join(self.build_lib,'pycamb','camb')):
-        
+            
             self.fcompiler = new_fcompiler(compiler=self.fcompiler,
                                            verbose=self.verbose,
                                            dry_run=self.dry_run,
                                            force=self.force,
-                                           c_compiler=self.compiler)
+                                           c_compiler=self.compiler,
+                                           )
             
             if self.fcompiler is not None:
                 self.fcompiler.customize(self.distribution)
                 self.fcompiler.customize_cmd(self)
                 self.fcompiler.show_customization()
+                
+            #It seems sometimes linker_exe is missing
+            if not self.fcompiler.linker_exe: self.fcompiler.linker_exe = self.fcompiler.linker_so
     
             src_dir = os.path.join('pycamb','src')
             obj_files = self.fcompiler.compile([os.path.join(src_dir,'%s.f90'%o) for o in self.objs],
@@ -57,10 +62,4 @@ class build_camb(_build):
             
             self.fcompiler.link_executable(obj_files,'camb',output_dir=os.path.join(self.build_lib,'pycamb'))
         
-        
-class build(_build):
-    def get_sub_commands(self):
-        return _build.get_sub_commands(self) + ['build_camb']
-    
-    
-setup(cmdclass={'build':build, 'build_camb': build_camb},**config.todict())
+setup(cmdclass={'build':build},**config.todict())
