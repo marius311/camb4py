@@ -1,6 +1,7 @@
 import os
 from numpy.distutils.command.build import build as _build
 from numpy.distutils.core import setup
+#from setuptools import setup
 from numpy.distutils.misc_util import Configuration
 from numpy.distutils.fcompiler import new_fcompiler
 
@@ -44,8 +45,7 @@ class build(_build):
                                            verbose=self.verbose,
                                            dry_run=self.dry_run,
                                            force=self.force,
-                                           c_compiler=self.compiler,
-                                           )
+                                           c_compiler=self.compiler)
             
             if self.fcompiler is not None:
                 self.fcompiler.customize(self.distribution)
@@ -57,7 +57,7 @@ class build(_build):
     
             src_dir = os.path.join('pycamb','src')
             obj_files = self.fcompiler.compile([os.path.join(src_dir,'%s.f90'%o) for o in self.objs],
-                                               extra_postargs=['-cpp',self.fcompiler.module_dir_switch+src_dir],
+                                               extra_postargs=['-cpp',self.fcompiler.module_dir_switch+self.build_temp],
                                                output_dir=self.build_temp)
             
             self.fcompiler.link_executable(obj_files,'camb',output_dir=os.path.join(self.build_lib,'pycamb'))

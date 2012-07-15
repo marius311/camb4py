@@ -1,6 +1,8 @@
 import subprocess, os, sys
 
-if os.path.exists('camb'):
-    subprocess.call(['camb']+sys.argv[1:])
+camb_exec = os.path.join(os.path.dirname(os.path.abspath(__file__)),'camb')
+
+if os.path.exists(camb_exec):
+    subprocess.call([camb_exec]+sys.argv[1:])
 else:
-    print "pycamb installed without built in CAMB. Please re-install pycamb to use this feature."
+    print "pycamb was installed without built in CAMB.\nPlease re-install pycamb to use this feature."
