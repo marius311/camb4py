@@ -57,9 +57,9 @@ class build(_build):
     
             src_dir = os.path.join('pycamb','src')
             obj_files = self.fcompiler.compile([os.path.join(src_dir,'%s.f90'%o) for o in self.objs],
-                                               extra_postargs=['-cpp',self.fcompiler.module_dir_switch+self.build_temp],
+                                               extra_postargs=['-cpp',self.fcompiler.module_dir_switch+os.path.join(self.build_temp,src_dir)],
                                                output_dir=self.build_temp)
-            
+                
             self.fcompiler.link_executable(obj_files,'camb',output_dir=os.path.join(self.build_lib,'pycamb'))
         
 setup(cmdclass={'build':build},**config.todict())
