@@ -4,12 +4,13 @@ from numpy.distutils.core import setup
 #from setuptools import setup
 from numpy.distutils.misc_util import Configuration
 from numpy.distutils.fcompiler import new_fcompiler
+from distutils.errors import DistutilsError
 
 config = Configuration('pycamb',
    name='pycamb',
    version='0.1.0',
    author='Marius Millea',
-   author_email='mmillea@ucdavis.edsetuptoolsu',
+   author_email='mmillea@ucdavis.edu',
    packages=['pycamb'],
    url='http://pypi.python.org/pypi/pycamb/',
    license='LICENSE.txt',
@@ -39,7 +40,7 @@ class build(_build):
     def run(self):
         _build.run(self)
         
-        if not os.path.exists(os.path.join(self.build_lib,'pycamb','camb')):
+        if self.force or not os.path.exists(os.path.join(self.build_lib,'pycamb','camb')):
             
             self.fcompiler = new_fcompiler(compiler=self.fcompiler,
                                            verbose=self.verbose,
@@ -47,12 +48,14 @@ class build(_build):
                                            force=self.force,
                                            c_compiler=self.compiler)
             
-            if self.fcompiler is not None:
-                self.fcompiler.customize(self.distribution)
-                self.fcompiler.customize_cmd(self)
-                self.fcompiler.show_customization()
+            if self.fcompiler is None:
+                raise DistutilsError('Could not find Fortran compiler. See setup.cfg to specify one.')
                 
-            #It seems sometimes linker_exe is missing
+            self.fcompiler.customize(self.distribution)
+            self.fcompiler.customize_cmd(self)
+            self.fcompiler.show_customization()
+                
+            #Hack because sometimes the linker is missing
             if not self.fcompiler.linker_exe: self.fcompiler.linker_exe = self.fcompiler.linker_so
     
             src_dir = os.path.join('pycamb','src')
