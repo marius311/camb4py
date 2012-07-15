@@ -1,25 +1,12 @@
 import os
 from numpy.distutils.command.build import build as _build
 from numpy.distutils.core import setup
-#from setuptools import setup
-from numpy.distutils.misc_util import Configuration
 from numpy.distutils.fcompiler import new_fcompiler
 from distutils.errors import DistutilsError
 
-config = Configuration('pycamb',
-   name='pycamb',
-   version='0.1.0',
-   author='Marius Millea',
-   author_email='mmillea@ucdavis.edu',
-   packages=['pycamb'],
-   url='http://pypi.python.org/pypi/pycamb/',
-   license='LICENSE.txt',
-   description='A Python wrapper for the popular cosmological code CAMB.',
-   long_description=open('README').read(),
-   derr=None,
-)
 
 class build(_build):
+    
     objs = ['constants',
             'utils',
             'subroutines',
@@ -55,14 +42,30 @@ class build(_build):
             self.fcompiler.customize_cmd(self)
             self.fcompiler.show_customization()
                 
-            #Hack because sometimes the linker is missing
+            src_dir = os.path.join('pycamb','src')
+
+            self.copy_file(os.path.join(src_dir,'HighLExtrapTemplate_lenspotentialCls.dat'), os.path.join(self.build_lib,'pycamb'))
+
+            #Hack because sometimes the executable linker is missing
             if not self.fcompiler.linker_exe: self.fcompiler.linker_exe = self.fcompiler.linker_so
     
-            src_dir = os.path.join('pycamb','src')
             obj_files = self.fcompiler.compile([os.path.join(src_dir,'%s.f90'%o) for o in self.objs],
                                                extra_postargs=['-cpp',self.fcompiler.module_dir_switch+os.path.join(self.build_temp,src_dir)],
                                                output_dir=self.build_temp)
                 
             self.fcompiler.link_executable(obj_files,'camb',output_dir=os.path.join(self.build_lib,'pycamb'))
+
         
-setup(cmdclass={'build':build},**config.todict())
+        
+setup(
+  name='pycamb',
+  version='0.1.0',
+  author='Marius Millea',
+  author_email='mmillea@ucdavis.edu',
+  packages=['pycamb'],
+  url='http://pypi.python.org/pypi/pycamb/',
+  license='LICENSE.txt',
+  description='A Python wrapper for the popular cosmology code CAMB.',
+  long_description=open('README').read(),
+  cmdclass={'build':build}
+)

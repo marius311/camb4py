@@ -1,0 +1,93 @@
+======
+pycamb
+======
+
+What is pycamb?
+===============
+
+*pycamb* lets you call the popular cosmology code `CAMB <http://www.camb.info>`_ from `Python`.  
+
+Features
+--------
+
+* Call your existing and modified CAMB versions
+* Call the built-in version of CAMB that comes with `pycamb`
+* Automatically calculate *derivatives*
+* Very fast with no disk I/O, can be used with realistic sampling codes
+
+
+Installation
+============
+
+To install `pycamb`, download and extract the package, and from the top folder run::
+
+    python setup.py build
+    python setup.py install
+
+.. note :: If you receive error messages about compiling CAMB during the ``build``
+           step, you can choose compile options in the file ``setup.cfg``. 
+           Alternatively, if you already have your own version of CAMB compiled and 
+           would just like to use that, append ``--no-builtin`` to the ``build`` command.
+           
+.. note :: If you don't have root permissions, you can append ``--user`` to the ``install``
+           command to put `pycamb` underneath your home folder.
+           
+Usage
+=====
+
+First ``import pycamb``. Then load a CAMB executable with, ::
+
+    camb = pycamb.load()                    #use built-in CAMB
+    camb = pycamb.load('/path/to/camb')     #specify own CAMB
+    
+An ini file  of default values can be passed to ``load`` with ``defaults='/path/to/params.ini'``. 
+If none are given, then ``pycamb._defaults`` is used. 
+
+The call to ``load`` returns a function ``camb`` which can then be called with some parameters.
+The names of the parameters are exactly as they appear in the ini file. For example, ::
+
+    result = camb(get_scalar_cls=True, ombh2=.0225)
+    result = camb(**{'get_scalar_cls':True, 'ombh2':.0225})     #Same thing but passing a dictionary
+
+will get the scalar Cl's with ``ombh2=.0225`` and all other parameters at their default values. 
+
+
+The result is a dictionary containing the contents of any files written by CAMB 
+(automatically converted to `Numpy` arrays) as well as whatever it printed out to the screen. 
+A typical output looks like this, ::
+
+    {'scalar': array([[  2.00000000e+00,   1.52550000e-10,   7.41090000e-15,  4.57960000e-13],
+                      ..., 
+                      [  2.20000000e+03,   1.71360000e-11,   7.77430000e-13, -5.70770000e-14]]),
+     'stdout': 'Age of universe/GYr  =  13.794\nReion redshift'...}  
+
+.. note :: All `pycamb` functions have documentation which can be accessed by typing
+           the name of the function followed by  a question mark, e.g. ``pycamb.load?`` 
+
+Derivatives
+-----------
+
+To calculate numerical derivatives, use ``camb.derivative(dparam, params, epsilon)``. 
+For example, to take the derivative with respect to ``ombh2``, you could do, ::
+
+    result = camb.derivative('ombh2', {'get_scalar_cls':True, 'ombh2':.0225}, 1e-4)
+    result = camb.derivative('ombh2', dict(get_scalar_cls=True, ombh2=0225), 1e-4)      #Again, different way to input parameters
+    
+
+
+Details
+=======
+
+`pycamb` works by creating `named pipes <http://en.wikipedia.org/wiki/Named_pipe>`_ 
+for the CAMB input and output files. When CAMB is called, it reads/writes to these pipes.
+This means everything is stored in memory and there is no disk I/O. The only "wasted" time 
+is spent translating the outputs to/from text which is about 10ms per file. 
+This method of interface also has the advantage that it lets one use any number of
+existing CAMB executables on the fly, and does not crash `Python` in the event of a CAMB crash.
+
+Authors
+=======
+
+CAMB is written by Antony Lewis and Anthony Challinor.
+
+This wrapper is written by Marius Millea (feel free to email questions/comments to `<mmillea@ucdavis.edu>`_)

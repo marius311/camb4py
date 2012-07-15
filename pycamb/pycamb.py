@@ -1,28 +1,3 @@
-"""
-
-A Python wrapper for CAMB
-
-Example ::
-
-    import pycamb
-    camb = pycamb.pycamb('/path/to/camb')
-    camb(get_scalar_cls='T')
-
-
-Details
--------
-
-This wrapper works ultra-fast by creating FIFO named pipes for 
-the CAMB parameter file and output files, then calling CAMB 
-which subsequenty reads/writes to these pipes. This means everything
-is stored in memory the whole time there is zero disk I/O. 
-The only "wasted" time is spent translating the outputs to/from text, 
-however I calculate this is maximum about ###ms per call. 
-This also has the huge advantage that it lets one use any 
-existing CAMB executable without modification on the fly.
-
-"""
-
 import os, re, subprocess
 from ConfigParser import RawConfigParser
 from StringIO import StringIO
@@ -30,29 +5,39 @@ from tempfile import mktemp
 from threading import Thread, Event
 from numpy import loadtxt
 
+def load(executable=None, defaults=None):
+    """
+    
+    Prepare a CAMB executable to be called from Python.
+    
+    Parameters
+    ----------
+    executable, optional : path to a CAMB executable. 
+                           (default: the built-in CAMB, if it was installed) 
+
+    defaults, optional : string or filename containing a default ini file
+                         to be used for unspecified parameters 
+                         (default: pycamb._defaults)
+    
+    Returns
+    -------
+    pycamb object which can be called with a list of parameters
+    
+    """
+    return pycamb(executable, defaults)
+
 
 class pycamb(object):
     
-    def __init__(self, executable, defaults=None):
-        """
-        
-        Prepare a CAMB executable to be called from Python.
-        
-        Parameters
-        ----------
-        executable : path to the CAMB executable
-        defaults : string or a filename containing a default ini file
-                   to be used for parameters which aren't specified 
-                   (default: see pycamb._defaults)
-        
-        Returns
-        -------
-        pycamb object which can be called with a list of parameters
-        
-        """
-        self.defaults = _read_ini(defaults or _defaults)
-        if not os.path.exists(executable): raise Exception("Couldn't find CAMB executable '%s'"%executable)
-        else: self.executable = os.path.abspath(executable)
+    def __init__(self, executable=None, defaults=None):
+        self.defaults = read_ini(defaults or _defaults)
+        if executable is None:
+            executable = get_default_executable()
+            if executable is None: 
+                raise Exception("Since pycamb was installed without built-in CAMB, you must either specify a CAMB executable, or reinstall pycamb with built-in CAMB.")
+        elif not os.path.exists(executable): 
+            raise Exception("Couldn't find CAMB executable '%s'"%executable)
+        self.executable = os.path.abspath(executable)
     
     
     def __call__(self, **params):
@@ -66,10 +51,8 @@ class pycamb(object):
         **params : all key value pairs are passed to the CAMB ini
         
         """
-        p = self.defaults.copy()
-        p.update(params)
-        for k in _output_files: p.pop(k,None)
-            
+        p = self._get_params(params)
+        
         outputfiles = []
         if p['get_scalar_cls']=='T': outputfiles += ['scalar_output_file']
         if p['get_vector_cls']=='T': outputfiles += ['vector_output_file']
@@ -88,14 +71,14 @@ class pycamb(object):
         
         def writeparams():
             with open(paramfile,'w') as f: 
-                f.write('\n'.join(['%s = %s'%i for i in p.items()]+['END','']))
+                f.write('\n'.join(['%s = %s'%(k,trybool(v)) for (k,v) in p.items()]+['END','']))
         
         def readoutputs(readany):
             ro_started.set()
             for k in outputfiles:
                 with open(p[k]) as f:
                     read_any[0]=True
-                    try: result[_output_files[k]] = loadtxt(f)
+                    try: result[output_files[k]] = loadtxt(f)
                     except Exception: pass
 
         wp_thread = Thread(target=writeparams)
@@ -120,22 +103,31 @@ class pycamb(object):
         os.unlink(paramfile)
 
         return result
-    05
-    def derivative(self, dparam, params, delta=None):
+    
+    
+    
+    def derivative(self, dparam, params, epsilon=None):
         """Get a derivative."""
-        params[dparam] += delta/2
+        params = self._get_params(params)
+        params[dparam] += epsilon/2
         d1 = self(**params)
-        params[dparam] -= delta
+        params[dparam] -= epsilon
         d0 = self(**params)
         
         for k,v in d1.items():
-            if k!='stdout': v[:,1:] = (v[:,1:] - d0[k][:,1:])/delta
+            if k!='stdout': v[:,1:] = (v[:,1:] - d0[k][:,1:])/epsilon
         
         d1['stdout'] = (d0['stdout'],d1['stdout'])
         return d1
         
+    def _get_params(self, params):
+        """Get params after applying defaults and removing output files"""
+        p = self.defaults.copy()
+        p.update(params)
+        for k in output_files: p.pop(k,None)
+
     
-def _get_params(self, sourcedir):
+def get_params(self, sourcedir):
     """Scour CAMB source files for valid parameters"""
     camb_keys=set()
     for f in os.listdir('.'):
@@ -149,9 +141,14 @@ def _get_params(self, sourcedir):
                     
     return camb_keys
 
+
+def trybool(value):
+    if value==True: return 'T'
+    elif value==False: return 'F'
+    else: return value
     
     
-def _read_ini(ini):
+def read_ini(ini):
     """Load an ini file or string into a dictionary."""
     if os.path.exists(ini): ini = open(ini).read()
     config = RawConfigParser()
@@ -159,16 +156,21 @@ def _read_ini(ini):
     return dict(config.items('root'))
         
 
+def get_default_executable():
+    camb_exec = os.path.join(os.path.dirname(os.path.abspath(__file__)),'camb')
+    if os.path.exists(camb_exec): return camb_exec
+    else: return None
 
-_output_files = {'scalar_output_file':'scalar',
-                 'vector_output_file':'vector',
-                 'tensor_output_file':'tensor',
-                 'total_output_file:':None,
-                 'lensed_output_file':'lensed', 
-                 'lens_potential_output_file':'lens_potential',
-                 'lensed_total_output_file':None,
-                 'transfer_filename(1)':'transfer',
-                 'transfer_matterpower(1)':'transfer_matterpower'}
+
+output_files = {'scalar_output_file':'scalar',
+                'vector_output_file':'vector',
+                'tensor_output_file':'tensor',
+                'total_output_file:':None,
+                'lensed_output_file':'lensed', 
+                'lens_potential_output_file':'lens_potential',
+                'lensed_total_output_file':None,
+                'transfer_filename(1)':'transfer',
+                'transfer_matterpower(1)':'transfer_matterpower'}
 
 
 

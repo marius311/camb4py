@@ -1,0 +1,3 @@
+include README setup.py setup.cfg
+include pycamb/*.py
+graft pycamb/src
