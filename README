@@ -10,7 +10,7 @@ Features
 * Call your existing and modified CAMB versions
 * Call the built-in version of CAMB that comes with `pycamb`
 * Automatically calculate *derivatives*
-* Fast and no disk I/O, can be used in realistic sampling codes
+* Fast with no disk I/O, can be used in realistic sampling codes
 
 
 Installation
@@ -24,11 +24,16 @@ To install `pycamb`, download and extract the package, and from the top folder r
 Troubleshooting
 ---------------
 
-* If you receive error messages about compiling CAMB during the ``build``
-  step, you can modify compile options in the file ``setup.cfg``. 
-  Alternatively, if you already have your own version of CAMB compiled and 
-  would just like to use that, append ``--no-builtin`` to the ``build`` command.
+* Python attemps to automatically configure your Fortran compiler and compile flags. 
+  If this fails for some reason, you can configure it by hand in the file ``setup.cfg``. 
+
+* Alternatively, if you already have your own version of CAMB compiled and 
+  would just like to use that, append ``--no-builtin`` to the ``build`` command 
+  or make the corresponding change to ``setup.cfg``
            
+* If you want to disable OpenMP, append ``--no-openmp`` to the ``build`` command
+  or make the corresponding change in ``setup.cfg``.
+
 * If you don't have root permissions, you can append ``--user`` to the ``install``
   command to put `pycamb` underneath your home folder.
            

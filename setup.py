@@ -26,23 +26,26 @@ class build(_build):
     
     user_options = _build.user_options + [
         ('no-builtin', None,  "don't compile or install the built-in CAMB"),
+        ('no-openmp', None,  "compile without OpenMP"),
         ]
     
-    boolean_options = _build.boolean_options + ['no-builtin']
+    boolean_options = _build.boolean_options + ['no-builtin', 'no_openmp']
         
     def initialize_options(self):
         _build.initialize_options(self)
         self.no_builtin = None
+        self.no_openmp = None
         
         
     def get_openmp_flags(self, fcompiler):
-        """Hack to get OpenMP flags. Only gnu and intel will works, other are single threaded."""
-        fc_name = {v:k for (k,(_,v,_)) in FC.fcompiler_class.items()}.get(fcompiler.__class__)
-        if fc_name is not None:
-            if fc_name.startswith('gnu'):
-                return ['-fopenmp']
-            elif fc_name.startswith('intel'):
-                return ['-openmp']
+        """Hack to get OpenMP flags. Only gnu and intel will work, others are single threaded."""
+        if not self.no_openmp:
+            fc_name = {v:k for (k,(_,v,_)) in FC.fcompiler_class.items()}.get(fcompiler.__class__)
+            if fc_name is not None:
+                if fc_name.startswith('gnu'):
+                    return ['-fopenmp']
+                elif fc_name.startswith('intel'):
+                    return ['-openmp']
         return []
         
         
@@ -69,6 +72,8 @@ class build(_build):
 
         
     def run(self):
+        """ Modified to compile CAMB. """
+        
         _build.run(self)
         
         if not self.no_builtin and (self.force or not os.path.exists(os.path.join(self.build_lib,'pycamb','camb'))):
