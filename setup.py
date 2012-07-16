@@ -24,10 +24,20 @@ class build(_build):
             'camb',
             'inidriver']
     
+    user_options = _build.user_options + [
+        ('no-builtin', None,  "don't compile or install the built-in CAMB"),
+        ]
+    
+    boolean_options = _build.boolean_options + ['no-builtin']
+        
+    def initialize_options(self):
+        _build.initialize_options(self)
+        self.no_builtin = None
+        
     def run(self):
         _build.run(self)
         
-        if self.force or not os.path.exists(os.path.join(self.build_lib,'pycamb','camb')):
+        if not self.no_builtin and (self.force or not os.path.exists(os.path.join(self.build_lib,'pycamb','camb'))):
             
             self.fcompiler = new_fcompiler(compiler=self.fcompiler,
                                            verbose=self.verbose,

@@ -2,13 +2,10 @@
 pycamb
 ======
 
-What is pycamb?
-===============
+Features
+========
 
 *pycamb* lets you call the popular cosmology code `CAMB <http://www.camb.info>`_ from `Python`.  
-
-Features
---------
 
 * Call your existing and modified CAMB versions
 * Call the built-in version of CAMB that comes with `pycamb`
@@ -24,32 +21,39 @@ To install `pycamb`, download and extract the package, and from the top folder r
     python setup.py build
     python setup.py install
 
-.. note :: If you receive error messages about compiling CAMB during the ``build``
-           step, you can choose compile options in the file ``setup.cfg``. 
-           Alternatively, if you already have your own version of CAMB compiled and 
-           would just like to use that, append ``--no-builtin`` to the ``build`` command.
+Troubleshooting
+---------------
+
+* If you receive error messages about compiling CAMB during the ``build``
+  step, you can modify compile options in the file ``setup.cfg``. 
+  Alternatively, if you already have your own version of CAMB compiled and 
+  would just like to use that, append ``--no-builtin`` to the ``build`` command.
            
-.. note :: If you don't have root permissions, you can append ``--user`` to the ``install``
-           command to put `pycamb` underneath your home folder.
+* If you don't have root permissions, you can append ``--user`` to the ``install``
+  command to put `pycamb` underneath your home folder.
            
 Usage
 =====
 
-First ``import pycamb``. Then load a CAMB executable with, ::
+First load a CAMB executable with, ::
 
+    import pycamb
     camb = pycamb.load()                    #use built-in CAMB
-    camb = pycamb.load('/path/to/camb')     #specify own CAMB
+    camb = pycamb.load('/path/to/camb')     #or specify own CAMB
     
-An ini file  of default values can be passed to ``load`` with ``defaults='/path/to/params.ini'``. 
-If none are given, then ``pycamb._defaults`` is used. 
+``load`` also takes an argument ``defaults`` which can be path to an ini file,
+an already loaded ini file, or a dictionary, that specifies values for parameters not
+set manually, ::
 
+     pycamb.load(defaults='/path/to/params.ini') 
+     
 The call to ``load`` returns a function ``camb`` which can then be called with some parameters.
 The names of the parameters are exactly as they appear in the ini file. For example, ::
 
     result = camb(get_scalar_cls=True, ombh2=.0225)
     result = camb(**{'get_scalar_cls':True, 'ombh2':.0225})     #Same thing but passing a dictionary
 
-will get the scalar Cl's with ``ombh2=.0225`` and all other parameters at their default values. 
+will get the scalar Cl's with all parameters at their default values except for ``ombh2``. 
 
 
 The result is a dictionary containing the contents of any files written by CAMB 
@@ -82,8 +86,8 @@ Details
 for the CAMB input and output files. When CAMB is called, it reads/writes to these pipes.
 This means everything is stored in memory and there is no disk I/O. The only "wasted" time 
 is spent translating the outputs to/from text which is about 10ms per file. 
-This method of interface also has the advantage that it lets one use any number of
-existing CAMB executables on the fly, and does not crash `Python` in the event of a CAMB crash.
+This procedure also has the advantage that it lets one use any number of
+existing CAMB executables on the fly in one session, and does not crash `Python` in the event of a CAMB crash.
 
 Authors
 =======
