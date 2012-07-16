@@ -41,7 +41,7 @@ class build(_build):
         if fc_name is not None:
             if fc_name.startswith('gnu'):
                 return ['-fopenmp']
-            elif fc_name.startswiths('intel'):
+            elif fc_name.startswith('intel'):
                 return ['-openmp']
         return []
         
@@ -62,7 +62,8 @@ class build(_build):
         fcompiler.show_customization()
         
         #Hack because sometimes the executable linker is missing
-        if not fcompiler.linker_exe: fcompiler.linker_exe = fcompiler.linker_so
+        if not fcompiler.linker_exe: 
+            fcompiler.linker_exe = fcompiler.linker_so[:1]
 
         return fcompiler
 
