@@ -5,7 +5,7 @@ from tempfile import mktemp
 from threading import Thread, Event
 from numpy import loadtxt
 
-def load(executable=None, defaults=None):
+def load(executable=None, defaults=None, protocol='disk'):
     """
     
     Prepare a CAMB executable to be called from Python.
@@ -15,105 +15,40 @@ def load(executable=None, defaults=None):
     executable, optional : path to a CAMB executable. 
                            (default: the built-in CAMB, if it was installed) 
 
-    defaults, optional : string or filename containing a default ini file
+    defaults, optional : string, filename, or dict containing a default ini file
                          to be used for unspecified parameters 
-                         (default: pycamb._defaults)
-    
+                         (default: camb_pipe._defaults)
+                         
+    protocol, optional : one of 'pipe' or 'disk'. this specifies how Python communicates
+                         with CAMB. 'pipe' is based on Unix name pipes and is
+                         very fast, but may not always work with every compiler/OS combination.
+                         'disk' just reads/writes files to disk so it is slower but more stable
+                         (default: 'disk')
+                         
     Returns
     -------
-    pycamb object which can be called with a list of parameters
+    camb object which can be called with a list of parameters
     
     """
-    return pycamb(executable, defaults)
+    return {'disk':camb_disk, 'pipe':camb_pipe}[protocol](executable,defaults)
 
 
-class pycamb(object):
+
+class camb(object):
     
     def __init__(self, executable=None, defaults=None):
         self.defaults = read_ini(defaults or _defaults)
         if executable is None:
             executable = get_default_executable()
             if executable is None: 
-                raise Exception("Since pycamb was installed without built-in CAMB, you must either specify a CAMB executable, or reinstall pycamb with built-in CAMB.")
+                raise Exception("Since camb_pipe was installed without built-in CAMB, you must either specify a CAMB executable, or reinstall camb_pipe with built-in CAMB.")
         elif not os.path.exists(executable): 
             raise Exception("Couldn't find CAMB executable '%s'"%executable)
         self.executable = os.path.abspath(executable)
     
-    
-    def __call__(self, **params):
-        """
-        
-        Call CAMB and return the output files as well as std-out. 
-        
-        Parameters
-        ----------
-        
-        **params : all key value pairs are passed to the CAMB ini
-        
-        """
-        p = self._get_params(params)
-        
-        outputfiles = []
-        if try_str2bool(p['get_scalar_cls']): outputfiles += ['scalar_output_file']
-        if try_str2bool(p['get_vector_cls']): outputfiles += ['vector_output_file']
-        if try_str2bool(p['get_tensor_cls']): outputfiles += ['tensor_output_file']
-        if try_str2bool(p['do_lensing']): outputfiles += ['lensed_output_file', 'lensed_output_file']
-        if try_str2bool(p['get_transfer']): outputfiles += ['transfer_filename(1)', 'transfer_matterpower(1)']
-
-        for k in outputfiles: 
-            p[k]=mktemp(suffix='_%s'%k)
-            os.mkfifo(p[k])
-            
-        paramfile = mktemp(suffix='_param')
-        os.mkfifo(paramfile)
-        
-        result = {}
-        
-        def writeparams():
-            with open(paramfile,'w') as f: 
-                f.write('\n'.join(['%s = %s'%(k,try_bool2str(v)) for (k,v) in p.items()]+['END','']))
-        
-        def readoutputs(readany):
-            ro_started.set()
-            for k in outputfiles:
-                with open(p[k]) as f:
-                    read_any[0]=True
-                    try: result[output_files[k]] = loadtxt(f)
-                    except Exception: pass
-
-        wp_thread = Thread(target=writeparams)
-        wp_thread.start()
-        
-        read_any = [False]
-        ro_started = Event()
-        ro_thread = Thread(target=readoutputs,args=(read_any,))
-        ro_thread.start()
-        ro_started.wait()
-        
-        try:
-            result['stdout'] = subprocess.check_output(['./%s'%os.path.basename(self.executable),paramfile],
-                                                       cwd=os.path.dirname(self.executable),
-                                                       stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            print 'Warning: CAMB failed with exit code %s'%e.returncode
-            result['stdout'] = e.output
-        
-        
-        if read_any[0]:  
-            ro_thread.join()
-        else:
-            for k in outputfiles: open(p[k],'a').close()
-        
-        for k in outputfiles: os.unlink(p[k])
-        os.unlink(paramfile)
-
-        return result
-    
-    
-    
     def derivative(self, dparam, params, epsilon=None):
         """Get a derivative."""
-        params = self._get_params(params)
+        params = self._apply_defaults(params)
         try:
             x0 = float(params[dparam])
         except:
@@ -130,15 +65,140 @@ class pycamb(object):
             d1['stdout'] = (d0['stdout'],d1['stdout'])
             return d1
         
-    def _get_params(self, params):
+    def _apply_defaults(self, params):
         """Get params after applying defaults and removing output files"""
         p = self.defaults.copy()
         p.update(params)
-        for k in output_files: p.pop(k,None)
+        for k in output_names: p.pop(k,None)
         return p
 
+    def _get_tmp_files(self, p):
+        output_files = []
+        if try_str2bool(p['get_scalar_cls']): output_files += ['scalar_output_file']
+        if try_str2bool(p['get_vector_cls']): output_files += ['vector_output_file']
+        if try_str2bool(p['get_tensor_cls']): output_files += ['tensor_output_file']
+        if try_str2bool(p['do_lensing']): output_files += ['lensed_output_file', 'lensed_output_file']
+        if try_str2bool(p['get_transfer']): output_files += ['transfer_filename(1)', 'transfer_matterpower(1)']
+        
+        output_files = {k:mktemp(suffix='_%s'%k) for k in output_files}
+        param_file = mktemp(suffix='_param')
+
+        return output_files, param_file
     
-def get_params(self, sourcedir):
+        
+    def _call_camb(self, paramfile, result=None):
+        if result is None: result = {}
+        try:
+            result['stdout'] = subprocess.check_output(['./%s'%os.path.basename(self.executable),paramfile],
+                                                       cwd=os.path.dirname(self.executable),
+                                                       stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            print 'Warning: CAMB failed with exit code %s'%e.returncode
+            result['stdout'] = e.output
+        return result
+
+    def _write_ini(self, p, file):
+        file.write('\n'.join(['%s = %s'%(k,try_bool2str(v)) for (k,v) in p.items()]+['END','']))
+
+
+class camb_disk(camb):
+    """Implementation of CAMB which uses regular files on disk for communication."""
+
+    def __call__(self, **params):
+        """
+        
+        Call CAMB and return the output files as well as stdout. 
+        
+        Parameters
+        ----------
+        
+        **params : all key value pairs are passed to the CAMB ini
+        
+        """
+        params = self._apply_defaults(params)
+        
+        output_files, param_file = self._get_tmp_files(params)
+        for (key,filename) in output_files.items(): params[key]=filename
+        with open(param_file,'w') as f: self._write_ini(params, f)
+        
+        result = self._call_camb(param_file)
+        
+        for key,filename in output_files.items():
+            try: result[output_names[key]] = loadtxt(filename)
+            except: pass
+            try: os.remove(filename)
+            except: pass
+            
+        try: os.remove(param_file)
+        except: pass
+        
+        return result
+
+
+
+class camb_pipe(camb):
+    """Implementation of CAMB which uses Unix named FIFO pipes for communication."""
+    
+    def __call__(self, **params):
+        """
+        
+        Call CAMB and return the output files as well as std-out. 
+        
+        Parameters
+        ----------
+        
+        **params : all key value pairs are passed to the CAMB ini
+        
+        """
+        params = self._apply_defaults(params)
+        
+        output_files, param_file = self._get_tmp_files(params)
+        for key,filename in output_files.items(): 
+            params[key]=filename
+            os.mkfifo(filename)
+        os.mkfifo(param_file) 
+        
+        result = {}
+        
+        def writeparams():
+            with open(param_file,'w') as f: self._write_ini(params, f) 
+        
+        def readoutputs(readany):
+            ro_started.set()
+            for key in output_files:
+                with open(params[key]) as f:
+                    read_any[0]=True
+                    print 'reading %s'%key
+                    try: result[output_names[key]] = loadtxt(f)
+                    except Exception: pass
+
+        wp_thread = Thread(target=writeparams)
+        wp_thread.start()
+        
+        read_any = [False]
+        ro_started = Event()
+        ro_thread = Thread(target=readoutputs,args=(read_any,))
+        ro_thread.start()
+        ro_started.wait()
+        
+        self._call_camb(param_file, result)
+        
+        if read_any[0]:  
+            ro_thread.join()
+        else:
+            for key in output_files: open(params[key],'a').close()
+        
+        for key in output_files: os.unlink(params[key])
+        os.unlink(param_file)
+
+        return result
+
+
+
+
+
+    
+def get_valid_params(self, sourcedir):
     """Scour CAMB source files for valid parameters"""
     camb_keys=set()
     for f in os.listdir('.'):
@@ -154,8 +214,8 @@ def get_params(self, sourcedir):
 
 
 def try_bool2str(value):
-    if value==True: return 'T'
-    elif value==False: return 'F'
+    if value is True: return 'T'
+    elif value is False: return 'F'
     else: return value
     
 def try_str2bool(value):
@@ -167,10 +227,14 @@ def try_str2bool(value):
     
 def read_ini(ini):
     """Load an ini file or string into a dictionary."""
-    if os.path.exists(ini): ini = open(ini).read()
-    config = RawConfigParser()
-    config.readfp(StringIO('[root]\n'+ini))
-    return dict(config.items('root'))
+    if isinstance(ini,dict): return ini
+    if isinstance(ini,str):
+        if os.path.exists(ini): ini = open(ini).read()
+        config = RawConfigParser()
+        config.readfp(StringIO('[root]\n'+ini))
+        return dict(config.items('root'))
+    else:
+        raise ValueError('Unexecpected type for ini file %s'%type(ini))
         
 
 def get_default_executable():
@@ -179,15 +243,20 @@ def get_default_executable():
     else: return None
 
 
-output_files = {'scalar_output_file':'scalar',
+
+
+
+output_names = {'scalar_output_file':'scalar',
                 'vector_output_file':'vector',
                 'tensor_output_file':'tensor',
-                'total_output_file:':None,
+                'total_output_file':None,
                 'lensed_output_file':'lensed', 
                 'lens_potential_output_file':'lens_potential',
                 'lensed_total_output_file':None,
                 'transfer_filename(1)':'transfer',
-                'transfer_matterpower(1)':'transfer_matterpower'}
+                'transfer_matterpower(1)':'transfer_matterpower',
+                'fits_filename':None,
+                'output_root':None}
 
 
 
@@ -261,8 +330,8 @@ nu_mass_fractions = 1
 
 #Initial power spectrum, amplitude, spectral index and running. Pivot k in Mpc^{-1}.
 initial_power_num         = 1
-pivot_scalar              = 0.05
-pivot_tensor              = 0.05
+pivot_scalar              = 0.002
+pivot_tensor              = 0.002
 scalar_amp(1)             = 2.1e-9
 scalar_spectral_index(1)  = 0.96
 scalar_nrun(1)            = 0

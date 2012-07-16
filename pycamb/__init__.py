@@ -5,10 +5,10 @@ A Python wrapper for CAMB
 Example ::
 
     import pycamb
-    camb = pycamb.pycamb('/path/to/camb')
+    camb = pycamb.load('/path/to/camb')
     camb(get_scalar_cls='T')
 
 """
 
-from pycamb import load, _defaults
+from pycamb import load, _defaults, read_ini
 del pycamb

@@ -1,4 +1,4 @@
-import subprocess, os, sys
+import subprocess, sys
 from pycamb import get_default_executable
 
 camb_exec = get_default_executable()
