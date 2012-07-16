@@ -70,7 +70,7 @@ A typical output looks like this, ::
                       [  2.20000000e+03,   1.71360000e-11,   7.77430000e-13, -5.70770000e-14]]),
      'stdout': 'Age of universe/GYr  =  13.794\nReion redshift'...}  
 
-.. note :: All `pycamb` object have documentation which can be accessed by typing
+.. note :: All `pycamb` objects have documentation which can be accessed by typing
            the name of the object followed by  a question mark, e.g. ``pycamb.load?`` 
 
 Derivatives
