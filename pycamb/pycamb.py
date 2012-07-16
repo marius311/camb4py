@@ -60,9 +60,10 @@ class camb(object):
             d0 = self(**params)
         
             for k,v in d1.items():
-                if k!='stdout': v[:,1:] = (v[:,1:] - d0[k][:,1:])/epsilon
+                if k not in ['stdout','misc']: v[:,1:] = (v[:,1:] - d0[k][:,1:])/epsilon
             
             d1['stdout'] = (d0['stdout'],d1['stdout'])
+            d1['misc'] = (d0['misc'],d1['misc'])
             return d1
         
     def _apply_defaults(self, params):
@@ -95,11 +96,19 @@ class camb(object):
         except subprocess.CalledProcessError as e:
             print 'Warning: CAMB failed with exit code %s'%e.returncode
             result['stdout'] = e.output
+        result['misc'] = self._parse_stdout(result['stdout'])
         return result
 
     def _write_ini(self, p, file):
         file.write('\n'.join(['%s = %s'%(k,try_bool2str(v)) for (k,v) in p.items()]+['END','']))
 
+    def _parse_stdout(self,stdout):
+        parsed = {}
+        for line in stdout.splitlines():
+            matches = list(re.finditer('\s*(.+?)\s*=\s*(.+?)(\s|$)',line))
+            for m in matches: parsed[m.group(1)]=m.group(2)
+        return parsed
+    
 
 class camb_disk(camb):
     """Implementation of CAMB which uses regular files on disk for communication."""
@@ -168,7 +177,6 @@ class camb_pipe(camb):
             for key in output_files:
                 with open(params[key]) as f:
                     read_any[0]=True
-                    print 'reading %s'%key
                     try: result[output_names[key]] = loadtxt(f)
                     except Exception: pass
 
