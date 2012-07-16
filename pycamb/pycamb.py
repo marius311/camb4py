@@ -54,11 +54,11 @@ class pycamb(object):
         p = self._get_params(params)
         
         outputfiles = []
-        if p['get_scalar_cls']=='T': outputfiles += ['scalar_output_file']
-        if p['get_vector_cls']=='T': outputfiles += ['vector_output_file']
-        if p['get_tensor_cls']=='T': outputfiles += ['tensor_output_file']
-        if p['do_lensing']=='T': outputfiles += ['lensed_output_file', 'lensed_output_file']
-        if p['get_transfer']=='T': outputfiles += ['transfer_filename(1)', 'transfer_matterpower(1)']
+        if try_str2bool(p['get_scalar_cls']): outputfiles += ['scalar_output_file']
+        if try_str2bool(p['get_vector_cls']): outputfiles += ['vector_output_file']
+        if try_str2bool(p['get_tensor_cls']): outputfiles += ['tensor_output_file']
+        if try_str2bool(p['do_lensing']): outputfiles += ['lensed_output_file', 'lensed_output_file']
+        if try_str2bool(p['get_transfer']): outputfiles += ['transfer_filename(1)', 'transfer_matterpower(1)']
 
         for k in outputfiles: 
             p[k]=mktemp(suffix='_%s'%k)
@@ -71,7 +71,7 @@ class pycamb(object):
         
         def writeparams():
             with open(paramfile,'w') as f: 
-                f.write('\n'.join(['%s = %s'%(k,trybool(v)) for (k,v) in p.items()]+['END','']))
+                f.write('\n'.join(['%s = %s'%(k,try_bool2str(v)) for (k,v) in p.items()]+['END','']))
         
         def readoutputs(readany):
             ro_started.set()
@@ -109,22 +109,28 @@ class pycamb(object):
     def derivative(self, dparam, params, epsilon=None):
         """Get a derivative."""
         params = self._get_params(params)
-        params[dparam] += epsilon/2
-        d1 = self(**params)
-        params[dparam] -= epsilon
-        d0 = self(**params)
+        try:
+            x0 = float(params[dparam])
+        except:
+            raise Exception("Can't take derivative of non-numerical parameter '%s'=%s"%(dparam,params[dparam]) )
+        else:
+            params[dparam] = x0 - epsilon/2
+            d1 = self(**params)
+            params[dparam] = x0 + epsilon/2
+            d0 = self(**params)
         
-        for k,v in d1.items():
-            if k!='stdout': v[:,1:] = (v[:,1:] - d0[k][:,1:])/epsilon
-        
-        d1['stdout'] = (d0['stdout'],d1['stdout'])
-        return d1
+            for k,v in d1.items():
+                if k!='stdout': v[:,1:] = (v[:,1:] - d0[k][:,1:])/epsilon
+            
+            d1['stdout'] = (d0['stdout'],d1['stdout'])
+            return d1
         
     def _get_params(self, params):
         """Get params after applying defaults and removing output files"""
         p = self.defaults.copy()
         p.update(params)
         for k in output_files: p.pop(k,None)
+        return p
 
     
 def get_params(self, sourcedir):
@@ -142,11 +148,17 @@ def get_params(self, sourcedir):
     return camb_keys
 
 
-def trybool(value):
+def try_bool2str(value):
     if value==True: return 'T'
     elif value==False: return 'F'
     else: return value
     
+def try_str2bool(value):
+    if isinstance(value,str):
+        if value.lower() in ['t','true']: return True
+        elif value.lower() in ['f','false']: return False
+    return value
+
     
 def read_ini(ini):
     """Load an ini file or string into a dictionary."""

@@ -71,7 +71,7 @@ A typical output looks like this, ::
      'stdout': 'Age of universe/GYr  =  13.794\nReion redshift'...}  
 
 .. note :: All `pycamb` objects have documentation which can be accessed by typing
-           the name of the object followed by  a question mark, e.g. ``pycamb.load?`` 
+           the name of the object followed by a question mark, e.g. ``pycamb.load?`` 
 
 Derivatives
 -----------
