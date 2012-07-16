@@ -79,7 +79,9 @@ class build(_build):
             self.copy_file(os.path.join(src_dir,'HighLExtrapTemplate_lenspotentialCls.dat'), os.path.join(self.build_lib,'pycamb'))
     
             openmp_flags = self.get_openmp_flags(fcompiler)
-            compile_flags = openmp_flags + ['-cpp',fcompiler.module_dir_switch+os.path.join(self.build_temp,src_dir)]
+            compile_flags = openmp_flags + ['-cpp']
+            if fcompiler.module_dir_switch is not None: 
+                compile_flags += [fcompiler.module_dir_switch+os.path.join(self.build_temp,src_dir)]
             link_flags = openmp_flags
             
             obj_files = fcompiler.compile([os.path.join(src_dir,'%s.f90'%o) for o in self.objs],

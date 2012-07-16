@@ -10,7 +10,7 @@ Features
 * Call your existing and modified CAMB versions
 * Call the built-in version of CAMB that comes with `pycamb`
 * Automatically calculate *derivatives*
-* Fast and no disk I/O, can be used with realistic sampling codes
+* Fast and no disk I/O, can be used in realistic sampling codes
 
 
 Installation
