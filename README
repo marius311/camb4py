@@ -5,12 +5,12 @@ pycamb
 Features
 ========
 
-*pycamb* lets you call the popular cosmology code `CAMB <http://www.camb.info>`_ from `Python`.  
+*pycamb* lets you call `CAMB <http://www.camb.info>`_ from `Python`. In particular, 
 
 * Call your existing and modified CAMB versions
 * Call the built-in version of CAMB that comes with `pycamb`
 * Automatically calculate *derivatives*
-* Very fast with no disk I/O, can be used with realistic sampling codes
+* Fast and no disk I/O, can be used with realistic sampling codes
 
 
 Installation
