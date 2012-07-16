@@ -90,9 +90,14 @@ class pycamb(object):
         ro_thread.start()
         ro_started.wait()
         
+        try:
+            result['stdout'] = subprocess.check_output(['./%s'%os.path.basename(self.executable),paramfile],
+                                                       cwd=os.path.dirname(self.executable),
+                                                       stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            print 'Warning: CAMB failed with exit code %s'%e.returncode
+            result['stdout'] = e.output
         
-        result['stdout'] = subprocess.check_output(['./%s'%os.path.basename(self.executable),paramfile],
-                                                   cwd=os.path.dirname(self.executable))
         
         if read_any[0]:  
             ro_thread.join()
