@@ -1,3 +1,3 @@
-include README setup.py setup.cfg
-include pycamb/*.py
-graft pycamb/src
+include README.rst setup.py setup.cfg
+include camb4py/*.py
+graft camb4py/src

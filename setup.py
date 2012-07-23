@@ -70,6 +70,11 @@ class build(_build):
 
         return fcompiler
 
+    def create_camb_src_dir(self, source_tgz, src_dir):
+        
+        if 
+        
+        
         
     def run(self):
         """ Modified to compile CAMB. """
@@ -79,6 +84,7 @@ class build(_build):
         if not self.no_builtin and (self.force or not os.path.exists(os.path.join(self.build_lib,'camb4py','camb'))):
             
             fcompiler = self.get_fcompiler()
+            
             
             src_dir = os.path.join('camb4py','src')
 
