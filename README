@@ -1,22 +1,22 @@
-======
-pycamb
-======
+=======
+camb4py
+=======
 
 Features
 ========
 
-*pycamb* lets you call `CAMB <http://www.camb.info>`_ from `Python`. In particular, 
+`camb4py` lets you call `CAMB <http://www.camb.info>`_ from `Python`. In particular, 
 
 * Call your existing and modified CAMB versions
-* Call the built-in version of CAMB that comes with `pycamb`
+* Call the built-in version of CAMB that comes with `camb4py`
 * Automatically calculate *derivatives*
-* Fast with no disk I/O, can be used in realistic sampling codes
+* No disk I/O, fast enough to be used in realistic sampling codes
 
 
 Installation
 ============
 
-To install `pycamb`, download and extract the package, and from the top folder run::
+To install `camb4py`, download and extract the package, and from the top folder run::
 
     python setup.py build
     python setup.py install
@@ -35,22 +35,22 @@ Troubleshooting
   or make the corresponding change in ``setup.cfg``.
 
 * If you don't have root permissions, you can append ``--user`` to the ``install``
-  command to put `pycamb` underneath your home folder.
+  command to put `camb4py` underneath your home folder.
            
 Usage
 =====
 
 First load a CAMB executable with, ::
 
-    import pycamb
-    camb = pycamb.load()                    #use built-in CAMB
-    camb = pycamb.load('/path/to/camb')     #or specify own CAMB
+    import camb4py
+    camb = camb4py.load()                    #use built-in CAMB
+    camb = camb4py.load('/path/to/camb')     #or specify own CAMB
     
 ``load`` also takes an argument ``defaults`` which can be path to an ini file,
 an already loaded ini file, or a dictionary, that specifies values for parameters not
 set manually, ::
 
-     pycamb.load(defaults='/path/to/params.ini') 
+     camb4py.load(defaults='/path/to/params.ini') 
      
 The call to ``load`` returns a function ``camb`` which can then be called with some parameters.
 The names of the parameters are exactly as they appear in the ini file. For example, ::
@@ -70,8 +70,8 @@ A typical output looks like this, ::
                       [  2.20000000e+03,   1.71360000e-11,   7.77430000e-13, -5.70770000e-14]]),
      'stdout': 'Age of universe/GYr  =  13.794\nReion redshift'...}  
 
-.. note :: All `pycamb` objects have documentation which can be accessed by typing
-           the name of the object followed by a question mark, e.g. ``pycamb.load?`` 
+.. note :: All `camb4py` objects have documentation which can be accessed by typing
+           the name of the object followed by a question mark, e.g. ``camb4py.load?`` 
 
 Derivatives
 -----------
@@ -87,7 +87,7 @@ For example, to take the derivative with respect to ``ombh2``, you could do, ::
 Details
 =======
 
-`pycamb` works by creating `named pipes <http://en.wikipedia.org/wiki/Named_pipe>`_ 
+`camb4py` works by creating `named pipes <http://en.wikipedia.org/wiki/Named_pipe>`_ 
 for the CAMB input and output files. When CAMB is called, it reads/writes to these pipes.
 This means everything is stored in memory and there is no disk I/O. The only "wasted" time 
 is spent translating the outputs to/from text which is about 10ms per file. 

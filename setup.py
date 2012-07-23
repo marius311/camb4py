@@ -76,13 +76,13 @@ class build(_build):
         
         _build.run(self)
         
-        if not self.no_builtin and (self.force or not os.path.exists(os.path.join(self.build_lib,'pycamb','camb'))):
+        if not self.no_builtin and (self.force or not os.path.exists(os.path.join(self.build_lib,'camb4py','camb'))):
             
             fcompiler = self.get_fcompiler()
             
-            src_dir = os.path.join('pycamb','src')
+            src_dir = os.path.join('camb4py','src')
 
-            self.copy_file(os.path.join(src_dir,'HighLExtrapTemplate_lenspotentialCls.dat'), os.path.join(self.build_lib,'pycamb'))
+            self.copy_file(os.path.join(src_dir,'HighLExtrapTemplate_lenspotentialCls.dat'), os.path.join(self.build_lib,'camb4py'))
     
             openmp_flags = self.get_openmp_flags(fcompiler)
             compile_flags = openmp_flags + ['-cpp']
@@ -96,18 +96,18 @@ class build(_build):
                 
             fcompiler.link_executable(obj_files,
                                       'camb',
-                                      output_dir=os.path.join(self.build_lib,'pycamb'),
+                                      output_dir=os.path.join(self.build_lib,'camb4py'),
                                       extra_postargs=link_flags)
 
         
         
 setup(
-  name='pycamb',
+  name='camb4py',
   version='0.1.0',
   author='Marius Millea',
   author_email='mmillea@ucdavis.edu',
-  packages=['pycamb'],
-  url='http://pypi.python.org/pypi/pycamb/',
+  packages=['camb4py'],
+  url='http://pypi.python.org/pypi/camb4py/',
   license='LICENSE.txt',
   description='A Python wrapper for the popular cosmology code CAMB.',
   long_description=open('README').read(),
