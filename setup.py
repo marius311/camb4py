@@ -110,6 +110,6 @@ setup(
   url='http://pypi.python.org/pypi/camb4py/',
   license='LICENSE.txt',
   description='A Python wrapper for the popular cosmology code CAMB.',
-  long_description=open('README.md').read(),
+  long_description=open('README.rst').read(),
   cmdclass={'build':build}
 )
