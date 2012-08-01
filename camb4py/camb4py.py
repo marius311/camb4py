@@ -239,6 +239,7 @@ def read_ini(ini):
     if isinstance(ini,str):
         if os.path.exists(ini): ini = open(ini).read()
         config = RawConfigParser()
+        config.optionxform=str
         config.readfp(StringIO('[root]\n'+ini))
         return dict(config.items('root'))
     else:
