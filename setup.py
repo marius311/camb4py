@@ -1,4 +1,6 @@
-import os
+#!/usr/bin/env python
+
+import os, urllib2, tarfile
 from numpy.distutils.command.build import build as _build
 from numpy.distutils.core import setup
 import numpy.distutils.fcompiler as FC
@@ -70,12 +72,18 @@ class build(_build):
 
         return fcompiler
 
-    def create_camb_src_dir(self, source_tgz, src_dir):
-        
-        if 
-        
-        
-        
+
+    def download_file(self,url,target):
+        """
+        Download a file, raises HTTPError on fail
+        """
+        webFile = urllib2.urlopen(url)
+        localFile = open(target,'w')
+        localFile.write(webFile.read())
+        webFile.close()
+        localFile.close()
+
+
     def run(self):
         """ Modified to compile CAMB. """
         
@@ -84,21 +92,31 @@ class build(_build):
         if not self.no_builtin and (self.force or not os.path.exists(os.path.join(self.build_lib,'camb4py','camb'))):
             
             fcompiler = self.get_fcompiler()
-            
-            
-            src_dir = os.path.join('camb4py','src')
 
-            self.copy_file(os.path.join(src_dir,'HighLExtrapTemplate_lenspotentialCls.dat'), os.path.join(self.build_lib,'camb4py'))
+            src_tgz = "CAMB.tar.gz"
+            src_dir = os.path.join(self.build_temp,"camb")
+            if not os.path.exists(src_tgz): 
+                print "Downloading CAMB from http://camb.info/CAMB.tar.gz..."
+                self.download_file("http://camb.info/CAMB.tar.gz", src_tgz)
+            if not os.path.exists(self.build_temp): os.makedirs(self.build_temp)
+            tarfile.open(src_tgz).extractall(self.build_temp)
+            for f in os.listdir(src_dir):
+                if 'F90' in f: os.rename(os.path.join(src_dir,f), os.path.join(src_dir,f.replace('F90','f90')))
+
+            templ = os.path.join(src_dir,'HighLExtrapTemplate_lenspotentialCls.dat')
+            if os.path.exists(templ): 
+                self.copy_file(templ, os.path.join(self.build_lib,'camb4py'))
+    
     
             openmp_flags = self.get_openmp_flags(fcompiler)
             compile_flags = openmp_flags + ['-cpp']
             if fcompiler.module_dir_switch is not None: 
-                compile_flags += [fcompiler.module_dir_switch+os.path.join(self.build_temp,src_dir)]
+                compile_flags += [fcompiler.module_dir_switch+src_dir]
             link_flags = openmp_flags
             
             obj_files = fcompiler.compile([os.path.join(src_dir,'%s.f90'%o) for o in self.objs],
-                                           extra_postargs=compile_flags,
-                                           output_dir=self.build_temp)
+                                           extra_postargs=compile_flags,)
+#                                           output_dir=self.build_temp)
                 
             fcompiler.link_executable(obj_files,
                                       'camb',
