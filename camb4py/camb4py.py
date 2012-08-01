@@ -17,7 +17,7 @@ def load(executable=None, defaults=None, protocol='disk'):
 
     defaults, optional : string, filename, or dict containing a default ini file
                          to be used for unspecified parameters 
-                         (default: camb_pipe._defaults)
+                         (default: camb4py._defaults)
                          
     protocol, optional : one of 'pipe' or 'disk'. this specifies how Python communicates
                          with CAMB. 'pipe' is based on Unix name pipes and is
@@ -41,7 +41,11 @@ class camb(object):
         if executable is None:
             executable = get_default_executable()
             if executable is None: 
-                raise Exception("Since camb_pipe was installed without built-in CAMB, you must either specify a CAMB executable, or reinstall camb_pipe with built-in CAMB.")
+                raise Exception(("Couldn't find the default camb executable. Please specify one with 'executable=/path/to/camb'\n"
+                                 "Possible reasons:\n"
+                                 " * You never ran 'setup.py install'\n"
+                                 " * You ran 'setup.py build' with the '--no-builtin' option.\n"
+                                 " * You are currently in the installation folder (cd somewhere else)\n"))
         elif not os.path.exists(executable): 
             raise Exception("Couldn't find CAMB executable '%s'"%executable)
         self.executable = os.path.abspath(executable)
@@ -243,7 +247,7 @@ def read_ini(ini):
         config.readfp(StringIO('[root]\n'+ini))
         return dict(config.items('root'))
     else:
-        raise ValueError('Unexecpected type for ini file %s'%type(ini))
+        raise ValueError('Unexpected type for ini file %s'%type(ini))
         
 
 def get_default_executable():
