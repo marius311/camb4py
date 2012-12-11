@@ -11,4 +11,4 @@ Example ::
 """
 
 from camb4py import load, _defaults, read_ini
-del camb4py
+#del camb4py

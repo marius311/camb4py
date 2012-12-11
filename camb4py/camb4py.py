@@ -49,7 +49,8 @@ class camb(object):
         elif not os.path.exists(executable): 
             raise Exception("Couldn't find CAMB executable '%s'"%executable)
         self.executable = os.path.abspath(executable)
-    
+        self.output_names = _output_names
+        
     def derivative(self, dparam, params, epsilon=None):
         """Get a derivative."""
         params = self._apply_defaults(params)
@@ -74,7 +75,7 @@ class camb(object):
         """Get params after applying defaults and removing output files"""
         p = self.defaults.copy()
         p.update(params)
-        for k in output_names: p.pop(k,None)
+        for k in self.output_names: p.pop(k,None)
         return p
 
     def _get_tmp_files(self, p):
@@ -137,8 +138,10 @@ class camb_disk(camb):
         result = self._call_camb(param_file)
         
         for key,filename in output_files.items():
-            try: result[output_names[key]] = loadtxt(filename)
-            except: pass
+            rkey = self.output_names.get(key,key)
+            try: result[rkey] = loadtxt(filename)
+            except Exception as e: result[rkey] = e
+            
             try: os.remove(filename)
             except: pass
             
@@ -181,7 +184,7 @@ class camb_pipe(camb):
             for key in output_files:
                 with open(params[key]) as f:
                     read_any[0]=True
-                    try: result[output_names[key]] = loadtxt(f)
+                    try: result[self.output_names[key]] = loadtxt(f)
                     except Exception: pass
 
         wp_thread = Thread(target=writeparams)
@@ -259,17 +262,17 @@ def get_default_executable():
 
 
 
-output_names = {'scalar_output_file':'scalar',
-                'vector_output_file':'vector',
-                'tensor_output_file':'tensor',
-                'total_output_file':None,
-                'lensed_output_file':'lensed', 
-                'lens_potential_output_file':'lens_potential',
-                'lensed_total_output_file':None,
-                'transfer_filename(1)':'transfer',
-                'transfer_matterpower(1)':'transfer_matterpower',
-                'fits_filename':None,
-                'output_root':None}
+_output_names = {'scalar_output_file':'scalar',
+                 'vector_output_file':'vector',
+                 'tensor_output_file':'tensor',
+                 'total_output_file':None,
+                 'lensed_output_file':'lensed', 
+                 'lens_potential_output_file':'lens_potential',
+                 'lensed_total_output_file':None,
+                 'transfer_filename(1)':'transfer',
+                 'transfer_matterpower(1)':'transfer_matterpower',
+                 'fits_filename':None,
+                 'output_root':None}
 
 
 
