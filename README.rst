@@ -2,6 +2,8 @@
 camb4py
 =======
 
+**Note:** `CAMB <https://github.com/cmbant/CAMB>`_ now has a built-in Python wrapper which is faster than this wrapper and gives you access to more internals, so I recommend checking that out first. This package might still be useful e.g. in some cases if you have an older version of CAMB with some custom modifications. 
+
 Features
 ========
 
