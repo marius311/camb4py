@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, urllib2, tarfile
+import os, urllib.request, urllib.error, urllib.parse, tarfile
 from numpy.distutils.command.build import build as _build
 from numpy.distutils.core import setup
 import numpy.distutils.fcompiler as FC
@@ -42,7 +42,7 @@ class build(_build):
     def get_openmp_flags(self, fcompiler):
         """Hack to get OpenMP flags. Only gnu and intel will work, others are single threaded."""
         if not self.no_openmp:
-            fc_name = {v:k for (k,(_,v,_)) in FC.fcompiler_class.items()}.get(fcompiler.__class__)
+            fc_name = {v:k for (k,(_,v,_)) in list(FC.fcompiler_class.items())}.get(fcompiler.__class__)
             if fc_name is not None:
                 if fc_name.startswith('gnu'):
                     return ['-fopenmp']
@@ -77,7 +77,7 @@ class build(_build):
         """
         Download a file, raises HTTPError on fail
         """
-        webFile = urllib2.urlopen(url)
+        webFile = urllib.request.urlopen(url)
         localFile = open(target,'w')
         localFile.write(webFile.read())
         webFile.close()
@@ -96,7 +96,7 @@ class build(_build):
             src_tgz = "CAMB.tar.gz"
             src_dir = os.path.join(self.build_temp,"camb")
             if not os.path.exists(src_tgz): 
-                print "Downloading CAMB from http://camb.info/CAMB.tar.gz..."
+                print("Downloading CAMB from http://camb.info/CAMB.tar.gz...")
                 self.download_file("http://camb.info/CAMB.tar.gz", src_tgz)
             if not os.path.exists(self.build_temp): os.makedirs(self.build_temp)
             tarfile.open(src_tgz).extractall(self.build_temp)

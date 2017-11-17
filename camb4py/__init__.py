@@ -10,5 +10,5 @@ Example ::
 
 """
 
-from camb4py import load, _defaults, read_ini
+from .camb4py import load, _defaults, read_ini
 #del camb4py

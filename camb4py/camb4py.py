@@ -1,6 +1,6 @@
 import os, re, subprocess
-from ConfigParser import RawConfigParser
-from StringIO import StringIO
+from configparser import RawConfigParser
+from io import StringIO
 from tempfile import mktemp
 from threading import Thread, Event
 from numpy import loadtxt
@@ -64,7 +64,7 @@ class camb(object):
             params[dparam] = x0 + epsilon/2
             d0 = self(**params)
         
-            for k,v in d1.items():
+            for k,v in list(d1.items()):
                 if k not in ['stdout','misc']: v[:,1:] = (v[:,1:] - d0[k][:,1:])/epsilon
             
             d1['stdout'] = (d0['stdout'],d1['stdout'])
@@ -99,18 +99,18 @@ class camb(object):
                                                        cwd=os.path.dirname(self.executable),
                                                        stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            print 'Warning: CAMB failed with exit code %s'%e.returncode
+            print('Warning: CAMB failed with exit code %s'%e.returncode)
             result['stdout'] = e.output
         result['misc'] = self._parse_stdout(result['stdout'])
         return result
 
     def _write_ini(self, p, file):
-        file.write('\n'.join(['%s = %s'%(k,try_bool2str(v)) for (k,v) in p.items()]+['END','']))
+        file.write('\n'.join(['%s = %s'%(k,try_bool2str(v)) for (k,v) in list(p.items())]+['END','']))
 
     def _parse_stdout(self,stdout):
         parsed = {}
         for line in stdout.splitlines():
-            matches = list(re.finditer('\s*(.+?)\s*=\s*(.+?)(\s|$)',line))
+            matches = list(re.finditer('\s*(.+?)\s*=\s*(.+?)(\s|$)',line.decode()))
             for m in matches: parsed[m.group(1)]=m.group(2)
         return parsed
     
@@ -132,12 +132,12 @@ class camb_disk(camb):
         params = self._apply_defaults(params)
         
         output_files, param_file = self._get_tmp_files(params)
-        for (key,filename) in output_files.items(): params[key]=filename
+        for (key,filename) in list(output_files.items()): params[key]=filename
         with open(param_file,'w') as f: self._write_ini(params, f)
         
         result = self._call_camb(param_file)
         
-        for key,filename in output_files.items():
+        for key,filename in list(output_files.items()):
             rkey = self.output_names.get(key,key)
             try: result[rkey] = loadtxt(filename)
             except Exception as e: result[rkey] = e
@@ -169,7 +169,7 @@ class camb_pipe(camb):
         params = self._apply_defaults(params)
         
         output_files, param_file = self._get_tmp_files(params)
-        for key,filename in output_files.items(): 
+        for key,filename in list(output_files.items()): 
             params[key]=filename
             os.mkfifo(filename)
         os.mkfifo(param_file) 
@@ -247,7 +247,7 @@ def read_ini(ini):
         if os.path.exists(ini): ini = open(ini).read()
         config = RawConfigParser()
         config.optionxform=str
-        config.readfp(StringIO('[root]\n'+ini))
+        config.readfp(StringIO(u'[root]\n'+ini))
         return dict(config.items('root'))
     else:
         raise ValueError('Unexpected type for ini file %s'%type(ini))
